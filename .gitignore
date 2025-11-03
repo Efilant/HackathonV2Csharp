@@ -1,0 +1,8 @@
+# Tüm dosyaları ignore et
+*
+
+# Sadece CourseApp klasörünü dahil et
+!CourseApp/
+
+# test_data.sh'i dahil et
+!test_data.sh
