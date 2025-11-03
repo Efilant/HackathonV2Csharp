@@ -21,6 +21,5 @@ public class ExamResultMapping:Profile
             .ForMember(dst => dst.StudentSurname, opt => opt.MapFrom(src => src.Student!.Surname))
             .ForMember(dst => dst.ExamName, opt => opt.MapFrom(src => src.Exam!.Name))
             .ReverseMap();
-        CreateMap<ExamResult, MissingMappingClass>();
     }
 }

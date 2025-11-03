@@ -21,9 +21,4 @@ public class CourseRepository : GenericRepository<Course>, ICourseRepository
         }
         return query.Include(c => c.Instructor);
     }
-
-    public void InvalidMethod()
-    {
-        var x = MissingCourseHelper.Process();
-    }
 }

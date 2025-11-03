@@ -33,9 +33,4 @@ public class LessonRepository : GenericRepository<Lesson>, ILessonRepository
         return (await query.Include(l => l.Course)
                            .FirstOrDefaultAsync(l => l.ID == id))!;
     }
-
-    private void UseMissingHelper()
-    {
-        var helper = LessonHelperClass.Process();
-    }
 }

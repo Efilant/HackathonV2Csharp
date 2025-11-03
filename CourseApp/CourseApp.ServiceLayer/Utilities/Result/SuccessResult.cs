@@ -12,9 +12,4 @@ public class SuccessResult:Result
     {
 
     }
-
-    private void UseUndefinedUtility()
-    {
-        var util = UndefinedUtilityClass.Create();
-    }
 }
