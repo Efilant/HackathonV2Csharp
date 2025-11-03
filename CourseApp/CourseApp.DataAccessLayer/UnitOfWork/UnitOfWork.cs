@@ -6,32 +6,39 @@ namespace CourseApp.DataAccessLayer.UnitOfWork;
 public class UnitOfWork : IUnitOfWork
 {
     private readonly AppDbContext _context;
-    private StudentRepository _studentRepository;
-    private LessonRepository _lessonRepository;
-    private CourseRepository _courseRepository;
-    private RegistrationRepository _registrationRepository;
-    private ExamRepository _examRepository;
-    private ExamResultRepository _examResultRepository;
-    private InstructorRepository _instructorRepository;
+    private readonly Lazy<StudentRepository> _studentRepository;
+    private readonly Lazy<LessonRepository> _lessonRepository;
+    private readonly Lazy<CourseRepository> _courseRepository;
+    private readonly Lazy<RegistrationRepository> _registrationRepository;
+    private readonly Lazy<ExamRepository> _examRepository;
+    private readonly Lazy<ExamResultRepository> _examResultRepository;
+    private readonly Lazy<InstructorRepository> _instructorRepository;
 
     public UnitOfWork(AppDbContext context)
     {
         _context = context;
+        _studentRepository = new Lazy<StudentRepository>(() => new StudentRepository(_context));
+        _lessonRepository = new Lazy<LessonRepository>(() => new LessonRepository(_context));
+        _courseRepository = new Lazy<CourseRepository>(() => new CourseRepository(_context));
+        _registrationRepository = new Lazy<RegistrationRepository>(() => new RegistrationRepository(_context));
+        _examRepository = new Lazy<ExamRepository>(() => new ExamRepository(_context));
+        _examResultRepository = new Lazy<ExamResultRepository>(() => new ExamResultRepository(_context));
+        _instructorRepository = new Lazy<InstructorRepository>(() => new InstructorRepository(_context));
     }
 
-    public IStudentRepository Students => _studentRepository ?? (_studentRepository = new StudentRepository(_context)); // ZOR SEVİYE: Thread-safe değil - multi-threaded ortamda birden fazla instance oluşturulabilir
+    public IStudentRepository Students => _studentRepository.Value;
 
-    public ILessonRepository Lessons => _lessonRepository ?? (_lessonRepository = new LessonRepository(_context));
+    public ILessonRepository Lessons => _lessonRepository.Value;
 
-    public ICourseRepository Courses => _courseRepository ?? (_courseRepository = new CourseRepository(_context));
+    public ICourseRepository Courses => _courseRepository.Value;
 
-    public IExamRepository Exams => _examRepository ?? (_examRepository = new ExamRepository(_context));
+    public IExamRepository Exams => _examRepository.Value;
 
-    public IExamResultRepository ExamResults => _examResultRepository ?? (_examResultRepository = new ExamResultRepository(_context));
+    public IExamResultRepository ExamResults => _examResultRepository.Value;
 
-    public IInstructorRepository Instructors => _instructorRepository ?? (_instructorRepository = new InstructorRepository(_context));
+    public IInstructorRepository Instructors => _instructorRepository.Value;
 
-    public IRegistrationRepository Registrations => _registrationRepository ?? (_registrationRepository = new RegistrationRepository(_context));
+    public IRegistrationRepository Registrations => _registrationRepository.Value;
 
     public async Task<int> CommitAsync()
     {
@@ -41,11 +48,5 @@ public class UnitOfWork : IUnitOfWork
     public async ValueTask DisposeAsync()
     {
         await _context.DisposeAsync();
-    }
-
-    private void AccessMissingRepository()
-    {
-        var repo = new NonExistentRepository();
-        repo.GetAll();
     }
 }
