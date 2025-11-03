@@ -97,13 +97,26 @@ public class RegistrationManager : IRegistrationService
 
     public async Task<IResult> Update(UpdatedRegistrationDto entity)
     {
-        var updatedRegistration = _mapper.Map<Registration>(entity);
-        if (updatedRegistration == null)
+        if (string.IsNullOrEmpty(entity.Id))
         {
-            return new ErrorResult("Failed to map entity");
+            return new ErrorResult("Entity ID is required");
         }
         
-        _unitOfWork.Registrations.Update(updatedRegistration);
+        var existingRegistration = await _unitOfWork.Registrations.GetByIdAsync(entity.Id, true);
+        if (existingRegistration == null)
+        {
+            return new ErrorResult("Registration not found");
+        }
+        
+        // Sadece değişen property'leri güncelle (partial update)
+        existingRegistration.RegistrationDate = entity.RegistrationDate;
+        existingRegistration.Price = entity.Price;
+        if (!string.IsNullOrWhiteSpace(entity.StudentID))
+            existingRegistration.StudentID = entity.StudentID;
+        if (!string.IsNullOrWhiteSpace(entity.CourseID))
+            existingRegistration.CourseID = entity.CourseID;
+        
+        _unitOfWork.Registrations.Update(existingRegistration);
         var result = await _unitOfWork.CommitAsync();
         if (result > 0)
         {

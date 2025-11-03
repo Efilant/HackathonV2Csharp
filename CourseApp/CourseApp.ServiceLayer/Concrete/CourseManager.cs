@@ -23,22 +23,23 @@ public class CourseManager : ICourseService
     {
         try
         {
-            var courseList = await _unitOfWork.Courses.GetAll(false).ToListAsync();
-            
-            var result = courseList.Select(course => new GetAllCourseDto
-            {
-                CourseName = course.CourseName,
-                CreatedDate = course.CreatedDate,
-                EndDate = course.EndDate,
-                Id = course.ID,
-                InstructorID = course.InstructorID,
-                IsActive = course.IsActive,
-                StartDate = course.StartDate
-            }).ToList();
+            // Projection database seviyesinde yapılıyor - daha performanslı
+            var courseList = await _unitOfWork.Courses.GetAll(false)
+                .Select(course => new GetAllCourseDto
+                {
+                    CourseName = course.CourseName,
+                    CreatedDate = course.CreatedDate,
+                    EndDate = course.EndDate,
+                    Id = course.ID,
+                    InstructorID = course.InstructorID,
+                    IsActive = course.IsActive,
+                    StartDate = course.StartDate
+                })
+                .ToListAsync();
 
             // Boş liste normal bir durum, hata değil
-            return new SuccessDataResult<IEnumerable<GetAllCourseDto>>(result, 
-                result.Any() ? ConstantsMessages.CourseListSuccessMessage : "Henüz kurs bulunmamaktadır.");
+            return new SuccessDataResult<IEnumerable<GetAllCourseDto>>(courseList, 
+                courseList.Any() ? ConstantsMessages.CourseListSuccessMessage : "Henüz kurs bulunmamaktadır.");
         }
         catch (Exception ex)
         {
@@ -128,10 +129,10 @@ public class CourseManager : ICourseService
             return new ErrorResult("Entity ID is required");
         }
         
-        var updatedCourse = await _unitOfWork.Courses.GetByIdAsync(entity.Id);
+        var updatedCourse = await _unitOfWork.Courses.GetByIdAsync(entity.Id, true);
         if (updatedCourse == null)
         {
-            return new ErrorResult(ConstantsMessages.CourseUpdateFailedMessage);
+            return new ErrorResult("Course not found");
         }
 
         updatedCourse.CourseName = entity.CourseName ?? string.Empty;
@@ -151,19 +152,20 @@ public class CourseManager : ICourseService
 
     public async Task<IDataResult<IEnumerable<GetAllCourseDetailDto>>> GetAllCourseDetail(bool track = true)
     {
-        var courseListDetailList = await _unitOfWork.Courses.GetAllCourseDetail(false).ToListAsync();
-        
-        var courseDetailDtoList = courseListDetailList.Select(x => new GetAllCourseDetailDto
-        {
-            CourseName = x.CourseName,
-            StartDate = x.StartDate,
-            EndDate = x.EndDate,
-            CreatedDate = x.CreatedDate,
-            Id = x.ID,
-            InstructorID = x.InstructorID ?? string.Empty,
-            InstructorName = x.Instructor?.Name ?? string.Empty,
-            IsActive = x.IsActive,
-        }).ToList();
+        // Projection database seviyesinde yapılıyor - daha performanslı
+        var courseDetailDtoList = await _unitOfWork.Courses.GetAllCourseDetail(false)
+            .Select(x => new GetAllCourseDetailDto
+            {
+                CourseName = x.CourseName,
+                StartDate = x.StartDate,
+                EndDate = x.EndDate,
+                CreatedDate = x.CreatedDate,
+                Id = x.ID,
+                InstructorID = x.InstructorID ?? string.Empty,
+                InstructorName = x.Instructor != null ? x.Instructor.Name ?? string.Empty : string.Empty,
+                IsActive = x.IsActive,
+            })
+            .ToListAsync();
 
         // Boş liste normal bir durum, hata değil
         return new SuccessDataResult<IEnumerable<GetAllCourseDetailDto>>(courseDetailDtoList, 

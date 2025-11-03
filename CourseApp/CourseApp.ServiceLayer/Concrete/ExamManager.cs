@@ -25,7 +25,9 @@ public class ExamManager : IExamService
         var examList = await _unitOfWork.Exams.GetAll(false).ToListAsync();
         var examListMapping = _mapper.Map<IEnumerable<GetAllExamDto>>(examList);
         
-        return new SuccessDataResult<IEnumerable<GetAllExamDto>>(examListMapping, ConstantsMessages.ExamListSuccessMessage);
+        // Boş liste normal bir durum, hata değil
+        return new SuccessDataResult<IEnumerable<GetAllExamDto>>(examListMapping, 
+            examList.Any() ? ConstantsMessages.ExamListSuccessMessage : "Henüz sınav bulunmamaktadır.");
     }
 
     public async Task<IDataResult<GetByIdExamDto>> GetByIdAsync(string id, bool track = true)
@@ -91,13 +93,23 @@ public class ExamManager : IExamService
 
     public async Task<IResult> Update(UpdateExamDto entity)
     {
-        var updatedExamMapping = _mapper.Map<Exam>(entity);
-        if (updatedExamMapping == null)
+        if (string.IsNullOrEmpty(entity.Id))
         {
-            return new ErrorResult("Failed to map entity");
+            return new ErrorResult("Entity ID is required");
         }
         
-        _unitOfWork.Exams.Update(updatedExamMapping);
+        var existingExam = await _unitOfWork.Exams.GetByIdAsync(entity.Id, true);
+        if (existingExam == null)
+        {
+            return new ErrorResult("Exam not found");
+        }
+        
+        // Sadece değişen property'leri güncelle (partial update)
+        if (!string.IsNullOrWhiteSpace(entity.Name))
+            existingExam.Name = entity.Name;
+        existingExam.Date = entity.Date;
+        
+        _unitOfWork.Exams.Update(existingExam);
         var result = await _unitOfWork.CommitAsync();
         if (result > 0)
         {

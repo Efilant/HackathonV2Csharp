@@ -102,13 +102,27 @@ public class StudentManager : IStudentService
 
     public async Task<IResult> Update(UpdateStudentDto entity)
     {
-        var updatedStudent = _mapper.Map<Student>(entity);
-        if (updatedStudent == null)
+        if (string.IsNullOrEmpty(entity.Id))
         {
-            return new ErrorResult("Failed to map entity");
+            return new ErrorResult("Entity ID is required");
         }
         
-        _unitOfWork.Students.Update(updatedStudent);
+        var existingStudent = await _unitOfWork.Students.GetByIdAsync(entity.Id, true);
+        if (existingStudent == null)
+        {
+            return new ErrorResult("Student not found");
+        }
+        
+        // Sadece değişen property'leri güncelle (partial update)
+        if (!string.IsNullOrWhiteSpace(entity.Name))
+            existingStudent.Name = entity.Name;
+        if (!string.IsNullOrWhiteSpace(entity.Surname))
+            existingStudent.Surname = entity.Surname;
+        existingStudent.BirthDate = entity.BirthDate;
+        if (!string.IsNullOrWhiteSpace(entity.TC))
+            existingStudent.TC = entity.TC;
+        
+        _unitOfWork.Students.Update(existingStudent);
         var result = await _unitOfWork.CommitAsync();
         if (result > 0)
         {

@@ -72,6 +72,11 @@ public class CoursesController : ControllerBase
     [HttpPut]
     public async Task<IActionResult> Update([FromBody] UpdateCourseDto updateCourseDto)
     {
+        if (updateCourseDto == null)
+        {
+            return BadRequest("Request body cannot be null");
+        }
+        
         var result = await _courseService.Update(updateCourseDto);
         if (result.IsSuccess)
         {

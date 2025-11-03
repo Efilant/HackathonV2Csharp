@@ -97,13 +97,30 @@ public class LessonsManager : ILessonService
 
     public async Task<IResult> Update(UpdateLessonDto entity)
     {
-        var updatedLesson = _mapper.Map<Lesson>(entity);
-        if (updatedLesson == null)
+        if (string.IsNullOrEmpty(entity.Id))
         {
-            return new ErrorResult("Failed to map entity");
+            return new ErrorResult("Entity ID is required");
         }
         
-        _unitOfWork.Lessons.Update(updatedLesson);
+        var existingLesson = await _unitOfWork.Lessons.GetByIdAsync(entity.Id, true);
+        if (existingLesson == null)
+        {
+            return new ErrorResult("Lesson not found");
+        }
+        
+        // Sadece değişen property'leri güncelle (partial update)
+        if (!string.IsNullOrWhiteSpace(entity.Title))
+            existingLesson.Title = entity.Title;
+        existingLesson.Date = entity.Date;
+        existingLesson.Duration = entity.Duration;
+        if (entity.Content != null)
+            existingLesson.Content = entity.Content;
+        if (!string.IsNullOrWhiteSpace(entity.CourseID))
+            existingLesson.CourseID = entity.CourseID;
+        if (entity.Time != null)
+            existingLesson.Time = entity.Time;
+        
+        _unitOfWork.Lessons.Update(existingLesson);
         var result = await _unitOfWork.CommitAsync();
         if (result > 0)
         {

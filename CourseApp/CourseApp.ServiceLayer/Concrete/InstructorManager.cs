@@ -103,13 +103,30 @@ public class InstructorManager : IInstructorService
 
     public async Task<IResult> Update(UpdatedInstructorDto entity)
     {
-        var updatedInstructor = _mapper.Map<Instructor>(entity);
-        if (updatedInstructor == null)
+        if (string.IsNullOrEmpty(entity.Id))
         {
-            return new ErrorResult("Failed to map entity");
+            return new ErrorResult("Entity ID is required");
         }
         
-        _unitOfWork.Instructors.Update(updatedInstructor);
+        var existingInstructor = await _unitOfWork.Instructors.GetByIdAsync(entity.Id, true);
+        if (existingInstructor == null)
+        {
+            return new ErrorResult("Instructor not found");
+        }
+        
+        // Sadece değişen property'leri güncelle (partial update)
+        if (!string.IsNullOrWhiteSpace(entity.Name))
+            existingInstructor.Name = entity.Name;
+        if (!string.IsNullOrWhiteSpace(entity.Surname))
+            existingInstructor.Surname = entity.Surname;
+        if (entity.Email != null)
+            existingInstructor.Email = entity.Email;
+        if (entity.Professions != null)
+            existingInstructor.Professions = entity.Professions;
+        if (entity.PhoneNumber != null)
+            existingInstructor.PhoneNumber = entity.PhoneNumber;
+        
+        _unitOfWork.Instructors.Update(existingInstructor);
         var result = await _unitOfWork.CommitAsync();
         if (result > 0)
         {
