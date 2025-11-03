@@ -48,9 +48,13 @@ public class LessonsManager : ILessonService
 
     public async Task<IResult> CreateAsync(CreateLessonDto entity)
     {
-        if (entity == null)
+        if (string.IsNullOrWhiteSpace(entity.Title))
         {
-            return new ErrorResult("Entity cannot be null");
+            return new ErrorResult("Title is required");
+        }
+        if (string.IsNullOrWhiteSpace(entity.CourseID))
+        {
+            return new ErrorResult("CourseID is required");
         }
         
         var createdLesson = _mapper.Map<Lesson>(entity);
@@ -71,7 +75,17 @@ public class LessonsManager : ILessonService
 
     public async Task<IResult> Remove(DeleteLessonDto entity)
     {
+        if (entity == null || string.IsNullOrEmpty(entity.Id))
+        {
+            return new ErrorResult("Entity ID is required");
+        }
+        
         var deletedLesson = _mapper.Map<Lesson>(entity);
+        if (deletedLesson == null)
+        {
+            return new ErrorResult("Failed to map entity");
+        }
+        
         _unitOfWork.Lessons.Remove(deletedLesson);
         var result = await _unitOfWork.CommitAsync();
         if (result > 0)
@@ -83,11 +97,6 @@ public class LessonsManager : ILessonService
 
     public async Task<IResult> Update(UpdateLessonDto entity)
     {
-        if (entity == null)
-        {
-            return new ErrorResult("Entity cannot be null");
-        }
-        
         var updatedLesson = _mapper.Map<Lesson>(entity);
         if (updatedLesson == null)
         {

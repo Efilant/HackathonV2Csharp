@@ -47,9 +47,9 @@ public class ExamManager : IExamService
 
     public async Task<IResult> CreateAsync(CreateExamDto entity)
     {
-        if (entity == null)
+        if (string.IsNullOrWhiteSpace(entity.Name))
         {
-            return new ErrorResult("Entity cannot be null");
+            return new ErrorResult("Name is required");
         }
         
         var addedExamMapping = _mapper.Map<Exam>(entity);
@@ -91,11 +91,6 @@ public class ExamManager : IExamService
 
     public async Task<IResult> Update(UpdateExamDto entity)
     {
-        if (entity == null)
-        {
-            return new ErrorResult("Entity cannot be null");
-        }
-        
         var updatedExamMapping = _mapper.Map<Exam>(entity);
         if (updatedExamMapping == null)
         {

@@ -74,9 +74,9 @@ public class CourseManager : ICourseService
     }
     public async Task<IResult> CreateAsync(CreateCourseDto entity)
     {
-        if (entity == null)
+        if (string.IsNullOrWhiteSpace(entity.CourseName))
         {
-            return new ErrorResult("Entity cannot be null");
+            return new ErrorResult("CourseName is required");
         }
         
         var createdCourse = new Course
@@ -123,7 +123,7 @@ public class CourseManager : ICourseService
 
     public async Task<IResult> Update(UpdateCourseDto entity)
     {
-        if (entity == null || string.IsNullOrEmpty(entity.Id))
+        if (string.IsNullOrEmpty(entity.Id))
         {
             return new ErrorResult("Entity ID is required");
         }
@@ -134,7 +134,7 @@ public class CourseManager : ICourseService
             return new ErrorResult(ConstantsMessages.CourseUpdateFailedMessage);
         }
 
-        updatedCourse.CourseName = entity.CourseName;
+        updatedCourse.CourseName = entity.CourseName ?? string.Empty;
         updatedCourse.StartDate = entity.StartDate;
         updatedCourse.EndDate = entity.EndDate;
         updatedCourse.InstructorID = entity.InstructorID;
@@ -165,36 +165,36 @@ public class CourseManager : ICourseService
             IsActive = x.IsActive,
         }).ToList();
 
-        if (!courseDetailDtoList.Any())
-        {
-            return new ErrorDataResult<IEnumerable<GetAllCourseDetailDto>>(Enumerable.Empty<GetAllCourseDetailDto>(), ConstantsMessages.CourseDetailsFetchFailed);
-        }
-
-        return new SuccessDataResult<IEnumerable<GetAllCourseDetailDto>>(courseDetailDtoList, ConstantsMessages.CourseDetailsFetchedSuccessfully);
+        // Boş liste normal bir durum, hata değil
+        return new SuccessDataResult<IEnumerable<GetAllCourseDetailDto>>(courseDetailDtoList, 
+            courseDetailDtoList.Any() ? ConstantsMessages.CourseDetailsFetchedSuccessfully : "Henüz kurs detayı bulunmamaktadır.");
     }
 
     private IResult CourseNameIsNullOrEmpty(string courseName)
     {
-        if(courseName == null || courseName.Length == 0)
+        if(string.IsNullOrWhiteSpace(courseName))
         {
             return new ErrorResult("Kurs Adı Boş Olamaz");
         }
         return new SuccessResult();
     }
 
-    private async Task<IResult> CourseNameUniqeCheck(string id,string courseName)
+    private async Task<IResult> CourseNameUniqeCheck(string id, string courseName)
     {
-        var courseNameCheck = await _unitOfWork.Courses.GetAll(false).AnyAsync(c => c.CourseName == courseName);
-        if(!courseNameCheck)
+        // Aynı isimde başka bir kurs var mı kontrol et (kendi ID'sini hariç tut)
+        var courseNameCheck = await _unitOfWork.Courses.GetAll(false)
+            .AnyAsync(c => c.CourseName == courseName && c.ID != id);
+        
+        if(courseNameCheck)
         {
-            return new ErrorResult("Bu kurs adi ile zaten bir kurs var");
+            return new ErrorResult("Bu kurs adı ile zaten bir kurs var");
         }
         return new SuccessResult();
     }
 
-    private  IResult CourseNameLenghtCehck(string courseName)
+    private IResult CourseNameLenghtCehck(string courseName)
     {
-        if(courseName == null || courseName.Length < 2 || courseName.Length > 50)
+        if(string.IsNullOrWhiteSpace(courseName) || courseName.Length < 2 || courseName.Length > 50)
         {
             return new ErrorResult("Kurs Adı Uzunluğu 2 - 50 Karakter Arasında Olmalı");
         }

@@ -48,9 +48,13 @@ public class RegistrationManager : IRegistrationService
 
     public async Task<IResult> CreateAsync(CreateRegistrationDto entity)
     {
-        if (entity == null)
+        if (string.IsNullOrWhiteSpace(entity.StudentID))
         {
-            return new ErrorResult("Entity cannot be null");
+            return new ErrorResult("StudentID is required");
+        }
+        if (string.IsNullOrWhiteSpace(entity.CourseID))
+        {
+            return new ErrorResult("CourseID is required");
         }
         
         var createdRegistration = _mapper.Map<Registration>(entity);
@@ -93,11 +97,6 @@ public class RegistrationManager : IRegistrationService
 
     public async Task<IResult> Update(UpdatedRegistrationDto entity)
     {
-        if (entity == null)
-        {
-            return new ErrorResult("Entity cannot be null");
-        }
-        
         var updatedRegistration = _mapper.Map<Registration>(entity);
         if (updatedRegistration == null)
         {

@@ -6,7 +6,7 @@ public class CreateCourseDto
 {
     public bool IsActive { get; set; } = false;
     public DateTime CreatedDate { get; set; } = DateTime.Now;
-    public string? CourseName { get; set; }
+    public string CourseName { get; set; } = string.Empty;
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
     public string? InstructorID { get; set; }

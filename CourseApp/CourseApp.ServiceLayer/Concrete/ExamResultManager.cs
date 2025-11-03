@@ -26,12 +26,10 @@ public class ExamResultManager : IExamResultService
     {
         var examResultList = await _unitOfWork.ExamResults.GetAll(false).ToListAsync();
         var examResultListMapping = _mapper.Map<IEnumerable<GetAllExamResultDto>>(examResultList);
-        if (!examResultList.Any())
-        {
-            return new ErrorDataResult<IEnumerable<GetAllExamResultDto>>(null, ConstantsMessages.ExamResultListFailedMessage);
-        }
-        return new SuccessDataResult<IEnumerable<GetAllExamResultDto>>(examResultListMapping, ConstantsMessages.ExamResultListSuccessMessage);
-
+        
+        // Boş liste normal bir durum, hata değil
+        return new SuccessDataResult<IEnumerable<GetAllExamResultDto>>(examResultListMapping, 
+            examResultList.Any() ? ConstantsMessages.ExamResultListSuccessMessage : "Henüz sınav sonucu bulunmamaktadır.");
     }
 
     public async Task<IDataResult<GetByIdExamResultDto>> GetByIdAsync(string id, bool track = true)
@@ -53,9 +51,13 @@ public class ExamResultManager : IExamResultService
 
     public async Task<IResult> CreateAsync(CreateExamResultDto entity)
     {
-        if (entity == null)
+        if (string.IsNullOrWhiteSpace(entity.ExamID))
         {
-            return new ErrorResult("Entity cannot be null");
+            return new ErrorResult("ExamID is required");
+        }
+        if (string.IsNullOrWhiteSpace(entity.StudentID))
+        {
+            return new ErrorResult("StudentID is required");
         }
         
         var addedExamResultMapping = _mapper.Map<ExamResult>(entity);
@@ -97,11 +99,6 @@ public class ExamResultManager : IExamResultService
 
     public async Task<IResult> Update(UpdateExamResultDto entity)
     {
-        if (entity == null)
-        {
-            return new ErrorResult("Entity cannot be null");
-        }
-        
         var updatedExamResultMapping = _mapper.Map<ExamResult>(entity);
         if (updatedExamResultMapping == null)
         {

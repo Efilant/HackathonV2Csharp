@@ -49,9 +49,17 @@ public class StudentManager : IStudentService
 
     public async Task<IResult> CreateAsync(CreateStudentDto entity)
     {
-        if(entity == null)
+        if (string.IsNullOrWhiteSpace(entity.Name))
         {
-            return new ErrorResult("Entity cannot be null");
+            return new ErrorResult("Name is required");
+        }
+        if (string.IsNullOrWhiteSpace(entity.Surname))
+        {
+            return new ErrorResult("Surname is required");
+        }
+        if (string.IsNullOrWhiteSpace(entity.TC))
+        {
+            return new ErrorResult("TC is required");
         }
         
         var createdStudent = _mapper.Map<Student>(entity);
@@ -94,11 +102,6 @@ public class StudentManager : IStudentService
 
     public async Task<IResult> Update(UpdateStudentDto entity)
     {
-        if (entity == null)
-        {
-            return new ErrorResult("Entity cannot be null");
-        }
-        
         var updatedStudent = _mapper.Map<Student>(entity);
         if (updatedStudent == null)
         {

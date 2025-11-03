@@ -55,9 +55,13 @@ public class InstructorManager : IInstructorService
 
     public async Task<IResult> CreateAsync(CreatedInstructorDto entity)
     {
-        if (entity == null)
+        if (string.IsNullOrWhiteSpace(entity.Name))
         {
-            return new ErrorResult("Entity cannot be null");
+            return new ErrorResult("Name is required");
+        }
+        if (string.IsNullOrWhiteSpace(entity.Surname))
+        {
+            return new ErrorResult("Surname is required");
         }
         
         var createdInstructor = _mapper.Map<Instructor>(entity);
@@ -99,11 +103,6 @@ public class InstructorManager : IInstructorService
 
     public async Task<IResult> Update(UpdatedInstructorDto entity)
     {
-        if (entity == null)
-        {
-            return new ErrorResult("Entity cannot be null");
-        }
-        
         var updatedInstructor = _mapper.Map<Instructor>(entity);
         if (updatedInstructor == null)
         {
