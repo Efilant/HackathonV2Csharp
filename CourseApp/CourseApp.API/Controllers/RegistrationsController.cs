@@ -19,7 +19,7 @@ public class RegistrationsController : ControllerBase
     public async Task<IActionResult> GetAll()
     {
         var result = await _registrationService.GetAllAsync();
-        if (result.Success)
+        if (result.IsSuccess)
         {
             return Ok(result);
         }
@@ -30,7 +30,7 @@ public class RegistrationsController : ControllerBase
     public async Task<IActionResult> GetById(string id)
     {
         var result = await _registrationService.GetByIdAsync(id);
-        if (result.Success)
+        if (result.IsSuccess)
         {
             return Ok(result);
         }
@@ -41,7 +41,7 @@ public class RegistrationsController : ControllerBase
     public async Task<IActionResult> GetAllDetail()
     {
         var result = await _registrationService.GetAllRegistrationDetailAsync();
-        if (result.Success)
+        if (result.IsSuccess)
         {
             return Ok(result);
         }
@@ -52,7 +52,7 @@ public class RegistrationsController : ControllerBase
     public async Task<IActionResult> GetByIdDetail(string id)
     {
         var result = await _registrationService.GetByIdRegistrationDetailAsync(id);
-        if (result.Success)
+        if (result.IsSuccess)
         {
             return Ok(result);
         }
@@ -62,13 +62,13 @@ public class RegistrationsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateRegistrationDto createRegistrationDto)
     {
-        // ORTA: Null check eksik - createRegistrationDto null olabilir
-        // ORTA: Tip dönüşüm hatası - decimal'i int'e direkt cast
-        var invalidPrice = (int)createRegistrationDto.Price; // ORTA: InvalidCastException
+        if (createRegistrationDto == null)
+        {
+            return BadRequest("Request body cannot be null");
+        }
         
         var result = await _registrationService.CreateAsync(createRegistrationDto);
-        // KOLAY: Değişken adı typo - result yerine rsult
-        if (rsult.Success) // TYPO: result yerine rsult
+        if (result.IsSuccess)
         {
             return Ok(result);
         }
@@ -79,18 +79,24 @@ public class RegistrationsController : ControllerBase
     public async Task<IActionResult> Update([FromBody] UpdatedRegistrationDto updatedRegistrationDto)
     {
         var result = await _registrationService.Update(updatedRegistrationDto);
-        if (result.Success)
+        if (result.IsSuccess)
         {
             return Ok(result);
         }
         return BadRequest(result);
     }
 
-    [HttpDelete]
-    public async Task<IActionResult> Delete([FromBody] DeleteRegistrationDto deleteRegistrationDto)
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(string id)
     {
-        var result = await _registrationService.Remove(deleteRegistrationDto);
-        if (result.Success)
+        if (string.IsNullOrEmpty(id))
+        {
+            return BadRequest("Id is required");
+        }
+        
+        var deleteDto = new DeleteRegistrationDto { Id = id };
+        var result = await _registrationService.Remove(deleteDto);
+        if (result.IsSuccess)
         {
             return Ok(result);
         }

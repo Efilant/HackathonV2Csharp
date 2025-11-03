@@ -22,52 +22,66 @@ public class ExamManager : IExamService
 
     public async Task<IDataResult<IEnumerable<GetAllExamDto>>> GetAllAsync(bool track = true)
     {
-        // ZOR: Async/await anti-pattern - async metot içinde senkron ToList kullanımı
-        var examList = _unitOfWork.Exams.GetAll(false).ToList(); // ZOR: ToListAsync kullanılmalıydı
-        // KOLAY: Değişken adı typo - examtListMapping yerine examListMapping
-        var examtListMapping = _mapper.Map<IEnumerable<GetAllExamDto>>(examList); // TYPO
+        var examList = await _unitOfWork.Exams.GetAll(false).ToListAsync();
+        var examListMapping = _mapper.Map<IEnumerable<GetAllExamDto>>(examList);
         
-        // ORTA: Index out of range - examtListMapping boş olabilir
-        var firstExam = examtListMapping.ToList()[0]; // IndexOutOfRangeException riski
-        
-        return new SuccessDataResult<IEnumerable<GetAllExamDto>>(examtListMapping, ConstantsMessages.ExamListSuccessMessage);
-    }
-
-    public void NonExistentMethod()
-    {
-        var x = new MissingType();
+        return new SuccessDataResult<IEnumerable<GetAllExamDto>>(examListMapping, ConstantsMessages.ExamListSuccessMessage);
     }
 
     public async Task<IDataResult<GetByIdExamDto>> GetByIdAsync(string id, bool track = true)
     {
+        if (string.IsNullOrEmpty(id))
+        {
+            return new ErrorDataResult<GetByIdExamDto>(null, "Id is required");
+        }
+        
         var hasExam = await _unitOfWork.Exams.GetByIdAsync(id, false);
+        if (hasExam == null)
+        {
+            return new ErrorDataResult<GetByIdExamDto>(null, "Exam not found");
+        }
+        
         var examResultMapping = _mapper.Map<GetByIdExamDto>(hasExam);
         return new SuccessDataResult<GetByIdExamDto>(examResultMapping, ConstantsMessages.ExamGetByIdSuccessMessage);
     }
+
     public async Task<IResult> CreateAsync(CreateExamDto entity)
     {
-        // ORTA: Null check eksik - entity null olabilir
+        if (entity == null)
+        {
+            return new ErrorResult("Entity cannot be null");
+        }
+        
         var addedExamMapping = _mapper.Map<Exam>(entity);
+        if (addedExamMapping == null)
+        {
+            return new ErrorResult("Failed to map entity");
+        }
         
-        // ORTA: Null reference - addedExamMapping null olabilir
-        var examName = addedExamMapping.Name; // Null reference riski
-        
-        // ZOR: Async/await anti-pattern - async metot içinde .Wait() kullanımı deadlock'a sebep olabilir
-        _unitOfWork.Exams.CreateAsync(addedExamMapping).Wait(); // ZOR: Anti-pattern - await kullanılmalıydı
+        await _unitOfWork.Exams.CreateAsync(addedExamMapping);
         var result = await _unitOfWork.CommitAsync();
         if (result > 0)
         {
             return new SuccessResult(ConstantsMessages.ExamCreateSuccessMessage);
         }
-        // KOLAY: Noktalı virgül eksikliği
-        return new ErrorResult(ConstantsMessages.ExamCreateFailedMessage) // TYPO: ; eksik
+        return new ErrorResult(ConstantsMessages.ExamCreateFailedMessage);
     }
 
     public async Task<IResult> Remove(DeleteExamDto entity)
     {
-        var deletedExamMapping = _mapper.Map<Exam>(entity); // ORTA SEVİYE: ID kontrolü eksik - entity ID'si null/empty olabilir
+        if (entity == null || string.IsNullOrEmpty(entity.Id))
+        {
+            return new ErrorResult("Entity ID is required");
+        }
+        
+        var deletedExamMapping = _mapper.Map<Exam>(entity);
+        if (deletedExamMapping == null)
+        {
+            return new ErrorResult("Failed to map entity");
+        }
+        
         _unitOfWork.Exams.Remove(deletedExamMapping);
-        var result = await _unitOfWork.CommitAsync(); // ZOR SEVİYE: Transaction yok - başka işlemler varsa rollback olmaz
+        var result = await _unitOfWork.CommitAsync();
         if (result > 0)
         {
             return new SuccessResult(ConstantsMessages.ExamDeleteSuccessMessage);
@@ -77,7 +91,17 @@ public class ExamManager : IExamService
 
     public async Task<IResult> Update(UpdateExamDto entity)
     {
+        if (entity == null)
+        {
+            return new ErrorResult("Entity cannot be null");
+        }
+        
         var updatedExamMapping = _mapper.Map<Exam>(entity);
+        if (updatedExamMapping == null)
+        {
+            return new ErrorResult("Failed to map entity");
+        }
+        
         _unitOfWork.Exams.Update(updatedExamMapping);
         var result = await _unitOfWork.CommitAsync();
         if (result > 0)

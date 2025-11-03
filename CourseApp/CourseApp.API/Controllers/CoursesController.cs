@@ -19,7 +19,7 @@ public class CoursesController : ControllerBase
     public async Task<IActionResult> GetAll()
     {
         var result = await _courseService.GetAllAsync();
-        if (result.Success)
+        if (result.IsSuccess)
         {
             return Ok(result);
         }
@@ -29,10 +29,13 @@ public class CoursesController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(string id)
     {
-        // KOLAY: Metod adı yanlış yazımı - GetByIdAsync yerine GetByIdAsnc
-        var result = await _courseService.GetByIdAsnc(id); // TYPO: Async yerine Asnc
-        // ORTA: Null reference - result null olabilir
-        if (result.Success)
+        if (string.IsNullOrEmpty(id))
+        {
+            return BadRequest("Id is required");
+        }
+        
+        var result = await _courseService.GetByIdAsync(id);
+        if (result.IsSuccess)
         {
             return Ok(result);
         }
@@ -43,7 +46,7 @@ public class CoursesController : ControllerBase
     public async Task<IActionResult> GetAllDetail()
     {
         var result = await _courseService.GetAllCourseDetail();
-        if (result.Success)
+        if (result.IsSuccess)
         {
             return Ok(result);
         }
@@ -53,37 +56,41 @@ public class CoursesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateCourseDto createCourseDto)
     {
-        // ORTA: Null check eksik - createCourseDto null olabilir
-        var courseName = createCourseDto.CourseName; // Null reference riski
-        
-        // ORTA: Array index out of range - courseName boş/null ise
-        var firstChar = courseName[0]; // IndexOutOfRangeException riski
+        if (createCourseDto == null)
+        {
+            return BadRequest("Request body cannot be null");
+        }
         
         var result = await _courseService.CreateAsync(createCourseDto);
-        if (result.Success)
-        {
-            return Ok(result);
-        }
-        // KOLAY: Noktalı virgül eksikliği
-        return BadRequest(result) // TYPO: ; eksik
-    }
-
-    [HttpPut]
-    public async Task<IActionResult> Update([FromBody] UpdateCourseDto updateCourseDto)
-    {
-        var result = await _courseService.Update(updateCourseDto);
-        if (result.Success)
+        if (result.IsSuccess)
         {
             return Ok(result);
         }
         return BadRequest(result);
     }
 
-    [HttpDelete]
-    public async Task<IActionResult> Delete([FromBody] DeleteCourseDto deleteCourseDto)
+    [HttpPut]
+    public async Task<IActionResult> Update([FromBody] UpdateCourseDto updateCourseDto)
     {
-        var result = await _courseService.Remove(deleteCourseDto);
-        if (result.Success)
+        var result = await _courseService.Update(updateCourseDto);
+        if (result.IsSuccess)
+        {
+            return Ok(result);
+        }
+        return BadRequest(result);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(string id)
+    {
+        if (string.IsNullOrEmpty(id))
+        {
+            return BadRequest("Id is required");
+        }
+        
+        var deleteDto = new DeleteCourseDto { Id = id };
+        var result = await _courseService.Remove(deleteDto);
+        if (result.IsSuccess)
         {
             return Ok(result);
         }

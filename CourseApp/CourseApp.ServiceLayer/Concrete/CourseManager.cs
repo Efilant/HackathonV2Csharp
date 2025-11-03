@@ -21,10 +21,8 @@ public class CourseManager : ICourseService
 
     public async Task<IDataResult<IEnumerable<GetAllCourseDto>>> GetAllAsync(bool track = true)
     {
-        // ZOR: N+1 Problemi - Her course için Instructor ayrı sorgu ile çekiliyor
         var courseList = await _unitOfWork.Courses.GetAll(false).ToListAsync();
         
-        // ZOR: N+1 - Include/ThenInclude kullanılmamış, lazy loading aktif
         var result = courseList.Select(course => new GetAllCourseDto
         {
             CourseName = course.CourseName,
@@ -32,28 +30,34 @@ public class CourseManager : ICourseService
             EndDate = course.EndDate,
             Id = course.ID,
             InstructorID = course.InstructorID,
-            // ZOR: Her course için ayrı sorgu - course.Instructor?.Name çekiliyor
-            // ORTA: Null reference riski - course null olabilir
             IsActive = course.IsActive,
             StartDate = course.StartDate
         }).ToList();
 
-        // ORTA: Index out of range - result boş olabilir
-        var firstCourse = result[0]; // IndexOutOfRangeException riski
+        if (!result.Any())
+        {
+            return new ErrorDataResult<IEnumerable<GetAllCourseDto>>(null, ConstantsMessages.CourseListFailedMessage);
+        }
 
         return new SuccessDataResult<IEnumerable<GetAllCourseDto>>(result, ConstantsMessages.CourseListSuccessMessage);
     }
 
     public async Task<IDataResult<GetByIdCourseDto>> GetByIdAsync(string id, bool track = true)
     {
-        // ORTA: Null check eksik - id null/empty olabilir
-        // ORTA: Null reference exception - hasCourse null olabilir ama kontrol edilmiyor
+        if (string.IsNullOrEmpty(id))
+        {
+            return new ErrorDataResult<GetByIdCourseDto>(null, "Id is required");
+        }
+        
         var hasCourse = await _unitOfWork.Courses.GetByIdAsync(id, track);
+        if (hasCourse == null)
+        {
+            return new ErrorDataResult<GetByIdCourseDto>(null, "Course not found");
+        }
 
-        // ORTA: Null reference - hasCourse null ise NullReferenceException
         var course = new GetByIdCourseDto
         {
-            CourseName = hasCourse.CourseName, // Null reference riski
+            CourseName = hasCourse.CourseName,
             CreatedDate = hasCourse.CreatedDate,
             EndDate = hasCourse.EndDate,
             InstructorID = hasCourse.InstructorID,
@@ -66,6 +70,11 @@ public class CourseManager : ICourseService
     }
     public async Task<IResult> CreateAsync(CreateCourseDto entity)
     {
+        if (entity == null)
+        {
+            return new ErrorResult("Entity cannot be null");
+        }
+        
         var createdCourse = new Course
         {
             CourseName = entity.CourseName,
@@ -89,6 +98,11 @@ public class CourseManager : ICourseService
     }
     public async Task<IResult> Remove(DeleteCourseDto entity)
     {
+        if (entity == null || string.IsNullOrEmpty(entity.Id))
+        {
+            return new ErrorResult("Entity ID is required");
+        }
+        
         var deletedCourse = new Course
         {
             ID = entity.Id,
@@ -105,6 +119,11 @@ public class CourseManager : ICourseService
 
     public async Task<IResult> Update(UpdateCourseDto entity)
     {
+        if (entity == null || string.IsNullOrEmpty(entity.Id))
+        {
+            return new ErrorResult("Entity ID is required");
+        }
+        
         var updatedCourse = await _unitOfWork.Courses.GetByIdAsync(entity.Id);
         if (updatedCourse == null)
         {
@@ -128,11 +147,9 @@ public class CourseManager : ICourseService
 
     public async Task<IDataResult<IEnumerable<GetAllCourseDetailDto>>> GetAllCourseDetail(bool track = true)
     {
-        // ZOR: N+1 Problemi - Include kullanılmamış, lazy loading aktif
         var courseListDetailList = await _unitOfWork.Courses.GetAllCourseDetail(false).ToListAsync();
         
-        // ZOR: N+1 - Her course için Instructor ayrı sorgu ile çekiliyor (x.Instructor?.Name)
-        var courseDetailDtoList  = courseListDetailList.Select(x => new NonExistentType // KOLAY: Yanlış tip - GetAllCourseDetailDto olmalıydı
+        var courseDetailDtoList = courseListDetailList.Select(x => new GetAllCourseDetailDto
         {
             CourseName = x.CourseName,
             StartDate = x.StartDate,
@@ -140,13 +157,14 @@ public class CourseManager : ICourseService
             CreatedDate = x.CreatedDate,
             Id = x.ID,
             InstructorID = x.InstructorID,
-            // ZOR: N+1 - Her course için ayrı Instructor sorgusu
-            InstructorName = x.Instructor?.Name ?? "", // Lazy loading aktif - her iterasyonda DB sorgusu
+            InstructorName = x.Instructor?.Name ?? "",
             IsActive = x.IsActive,
-        });
+        }).ToList();
 
-        // ORTA: Null reference - courseDetailDtoList null olabilir
-        var firstDetail = courseDetailDtoList.First(); // Null/Empty durumunda exception
+        if (!courseDetailDtoList.Any())
+        {
+            return new ErrorDataResult<IEnumerable<GetAllCourseDetailDto>>(null, ConstantsMessages.CourseDetailsFetchFailed);
+        }
 
         return new SuccessDataResult<IEnumerable<GetAllCourseDetailDto>>(courseDetailDtoList, ConstantsMessages.CourseDetailsFetchedSuccessfully);
     }

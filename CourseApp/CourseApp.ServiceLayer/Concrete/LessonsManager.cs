@@ -32,31 +32,42 @@ public class LessonsManager : ILessonService
 
     public async Task<IDataResult<GetByIdLessonDto>> GetByIdAsync(string id, bool track = true)
     {
-        // ORTA: Null check eksik - id null/empty olabilir
+        if (string.IsNullOrEmpty(id))
+        {
+            return new ErrorDataResult<GetByIdLessonDto>(null, "Id is required");
+        }
+        
         var hasLesson = await _unitOfWork.Lessons.GetByIdAsync(id, false);
-        // ORTA: Null reference - hasLesson null olabilir ama kontrol edilmiyor
+        if (hasLesson == null)
+        {
+            return new ErrorDataResult<GetByIdLessonDto>(null, "Lesson not found");
+        }
+        
         var hasLessonMapping = _mapper.Map<GetByIdLessonDto>(hasLesson);
-        // ORTA: Mantıksal hata - yanlış mesaj döndürülüyor (Instructor yerine Lesson olmalıydı)
-        return new SuccessDataResult<GetByIdLessonDto>(hasLessonMapping, ConstantsMessages.InstructorGetByIdSuccessMessage); // HATA: LessonGetByIdSuccessMessage olmalıydı
+        return new SuccessDataResult<GetByIdLessonDto>(hasLessonMapping, ConstantsMessages.LessonGetByIdSuccessMessage);
     }
 
     public async Task<IResult> CreateAsync(CreateLessonDto entity)
     {
-        // ORTA: Null check eksik - entity null olabilir
-        var createdLesson = _mapper.Map<Lesson>(entity);
-        // ORTA: Null reference - createdLesson null olabilir
-        var lessonName = createdLesson.Name; // Null reference riski
+        if (entity == null)
+        {
+            return new ErrorResult("Entity cannot be null");
+        }
         
-        // ZOR: Async/await anti-pattern - GetAwaiter().GetResult() deadlock'a sebep olabilir
-        _unitOfWork.Lessons.CreateAsync(createdLesson).GetAwaiter().GetResult(); // ZOR: Anti-pattern
+        var createdLesson = _mapper.Map<Lesson>(entity);
+        if (createdLesson == null)
+        {
+            return new ErrorResult("Failed to map entity");
+        }
+        
+        await _unitOfWork.Lessons.CreateAsync(createdLesson);
         var result = await _unitOfWork.CommitAsync();
         if (result > 0)
         {
             return new SuccessResult(ConstantsMessages.LessonCreateSuccessMessage);
         }
 
-        // KOLAY: Noktalı virgül eksikliği
-        return new ErrorResult(ConstantsMessages.LessonCreateFailedMessage) // TYPO: ; eksik
+        return new ErrorResult(ConstantsMessages.LessonCreateFailedMessage);
     }
 
     public async Task<IResult> Remove(DeleteLessonDto entity)
@@ -73,11 +84,16 @@ public class LessonsManager : ILessonService
 
     public async Task<IResult> Update(UpdateLessonDto entity)
     {
-        // ORTA: Null check eksik - entity null olabilir
-        var updatedLesson = _mapper.Map<Lesson>(entity);
+        if (entity == null)
+        {
+            return new ErrorResult("Entity cannot be null");
+        }
         
-        // ORTA: Index out of range - entity.Name null/boş olabilir
-        var firstChar = entity.Name[0]; // IndexOutOfRangeException riski
+        var updatedLesson = _mapper.Map<Lesson>(entity);
+        if (updatedLesson == null)
+        {
+            return new ErrorResult("Failed to map entity");
+        }
         
         _unitOfWork.Lessons.Update(updatedLesson);
         var result = await _unitOfWork.CommitAsync();
@@ -85,33 +101,37 @@ public class LessonsManager : ILessonService
         {
             return new SuccessResult(ConstantsMessages.LessonUpdateSuccessMessage);
         }
-        // ORTA: Mantıksal hata - hata durumunda SuccessResult döndürülüyor
-        return new SuccessResult(ConstantsMessages.LessonUpdateFailedMessage); // HATA: ErrorResult olmalıydı
+        return new ErrorResult(ConstantsMessages.LessonUpdateFailedMessage);
     }
 
     public async Task<IDataResult<IEnumerable<GetAllLessonDetailDto>>> GetAllLessonDetailAsync(bool track = true)
     {
-        // ZOR: N+1 Problemi - Include kullanılmamış, lazy loading aktif
         var lessonList = await _unitOfWork.Lessons.GetAllLessonDetails(false).ToListAsync();
         
-        // ZOR: N+1 - Her lesson için Course ayrı sorgu ile çekiliyor (lesson.Course?.CourseName)
+        if (!lessonList.Any())
+        {
+            return new ErrorDataResult<IEnumerable<GetAllLessonDetailDto>>(null, ConstantsMessages.LessonListFailedMessage);
+        }
+        
         var lessonsListMapping = _mapper.Map<IEnumerable<GetAllLessonDetailDto>>(lessonList);
         
-        // ORTA: Null reference - lessonsListMapping null olabilir
-        var firstLesson = lessonsListMapping.First(); // Null/Empty durumunda exception
-   
         return new SuccessDataResult<IEnumerable<GetAllLessonDetailDto>>(lessonsListMapping, ConstantsMessages.LessonListSuccessMessage);
     }
 
     public async Task<IDataResult<GetByIdLessonDetailDto>> GetByIdLessonDetailAsync(string id, bool track = true)
     {
+        if (string.IsNullOrEmpty(id))
+        {
+            return new ErrorDataResult<GetByIdLessonDetailDto>(null, "Id is required");
+        }
+        
         var lesson = await _unitOfWork.Lessons.GetByIdLessonDetailsAsync(id, false);
+        if (lesson == null)
+        {
+            return new ErrorDataResult<GetByIdLessonDetailDto>(null, "Lesson not found");
+        }
+        
         var lessonMapping = _mapper.Map<GetByIdLessonDetailDto>(lesson);
-        return new SuccessDataResult<GetByIdLessonDetailDto>(lessonMapping);
-    }
-
-    public Task<IDataResult<NonExistentDto>> GetNonExistentAsync(string id)
-    {
-        return Task.FromResult<IDataResult<NonExistentDto>>(null);
+        return new SuccessDataResult<GetByIdLessonDetailDto>(lessonMapping, ConstantsMessages.LessonGetByIdSuccessMessage);
     }
 }

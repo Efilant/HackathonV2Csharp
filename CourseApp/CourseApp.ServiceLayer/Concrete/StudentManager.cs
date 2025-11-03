@@ -33,29 +33,36 @@ public class StudentManager : IStudentService
 
     public async Task<IDataResult<GetByIdStudentDto>> GetByIdAsync(string id, bool track = true)
     {
-        // ORTA: Null check eksik - id null/empty olabilir
-        // ORTA: Null reference exception - hasStudent null olabilir ama kontrol edilmiyor
+        if (string.IsNullOrEmpty(id))
+        {
+            return new ErrorDataResult<GetByIdStudentDto>(null, "Id is required");
+        }
+        
         var hasStudent = await _unitOfWork.Students.GetByIdAsync(id, false);
+        if (hasStudent == null)
+        {
+            return new ErrorDataResult<GetByIdStudentDto>(null, "Student not found");
+        }
+        
         var hasStudentMapping = _mapper.Map<GetByIdStudentDto>(hasStudent);
-        // ORTA: Null reference - hasStudentMapping null olabilir ama kullanılıyor
-        var name = hasStudentMapping.Name; // Null reference riski
         return new SuccessDataResult<GetByIdStudentDto>(hasStudentMapping, ConstantsMessages.StudentGetByIdSuccessMessage);
     }
 
     public async Task<IResult> CreateAsync(CreateStudentDto entity)
     {
-        if(entity == null) return new ErrorResult("Null");
-        
-        // ORTA: Tip dönüşüm hatası - string'i int'e direkt cast
-        var invalidConversion = (int)entity.TC; // ORTA: InvalidCastException - string int'e dönüştürülemez
+        if(entity == null)
+        {
+            return new ErrorResult("Entity cannot be null");
+        }
         
         var createdStudent = _mapper.Map<Student>(entity);
-        // ORTA: Null reference - createdStudent null olabilir
-        var studentName = createdStudent.Name; // Null check yok
+        if (createdStudent == null)
+        {
+            return new ErrorResult("Failed to map entity");
+        }
         
         await _unitOfWork.Students.CreateAsync(createdStudent);
-        // ZOR: Async/await anti-pattern - .Result kullanımı deadlock'a sebep olabilir
-        var result = _unitOfWork.CommitAsync().Result; // ZOR: Anti-pattern
+        var result = await _unitOfWork.CommitAsync();
         if (result > 0)
         {
             return new SuccessResult(ConstantsMessages.StudentCreateSuccessMessage);
@@ -66,9 +73,19 @@ public class StudentManager : IStudentService
 
     public async Task<IResult> Remove(DeleteStudentDto entity)
     {
+        if (entity == null || string.IsNullOrEmpty(entity.Id))
+        {
+            return new ErrorResult("Entity ID is required");
+        }
+        
         var deletedStudent = _mapper.Map<Student>(entity);
+        if (deletedStudent == null)
+        {
+            return new ErrorResult("Failed to map entity");
+        }
+        
         _unitOfWork.Students.Remove(deletedStudent);
-        var result = _unitOfWork.CommitAsync().GetAwaiter().GetResult();
+        var result = await _unitOfWork.CommitAsync();
         if (result > 0)
         {
             return new SuccessResult(ConstantsMessages.StudentDeleteSuccessMessage);
@@ -78,25 +95,24 @@ public class StudentManager : IStudentService
 
     public async Task<IResult> Update(UpdateStudentDto entity)
     {
-        // ORTA: Null check eksik - entity null olabilir
-        var updatedStudent = _mapper.Map<Student>(entity);
+        if (entity == null)
+        {
+            return new ErrorResult("Entity cannot be null");
+        }
         
-        // ORTA: Index out of range - entity.TC null/boş olabilir
-        var tcFirstDigit = entity.TC[0]; // IndexOutOfRangeException riski
+        var updatedStudent = _mapper.Map<Student>(entity);
+        if (updatedStudent == null)
+        {
+            return new ErrorResult("Failed to map entity");
+        }
         
         _unitOfWork.Students.Update(updatedStudent);
         var result = await _unitOfWork.CommitAsync();
         if (result > 0)
         {
-            // ORTA: Mantıksal hata - başarılı durumda yanlış mesaj döndürülüyor
-            return new SuccessResult(ConstantsMessages.StudentListSuccessMessage); // HATA: UpdateSuccessMessage olmalıydı
+            return new SuccessResult(ConstantsMessages.StudentUpdateSuccessMessage);
         }
-        // ORTA: Mantıksal hata - hata durumunda SuccessResult döndürülüyor
-        return new SuccessResult(ConstantsMessages.StudentUpdateFailedMessage); // HATA: ErrorResult olmalıydı
+        return new ErrorResult(ConstantsMessages.StudentUpdateFailedMessage);
     }
 
-    public void MissingImplementation()
-    {
-        var x = UnknownClass.StaticMethod();
-    }
 }
