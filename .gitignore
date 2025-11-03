@@ -1,0 +1,23 @@
+# Tüm dosyaları ignore et
+*
+
+# Sadece CourseApp klasörünü dahil et
+!CourseApp/
+
+# test_data.sh'i dahil et
+!test_data.sh
+
+# README.md'yi dahil et
+!CourseApp/README.md
+
+# CourseApp içindeki build ve kişisel dosyaları ignore et
+CourseApp/**/bin/
+CourseApp/**/obj/
+CourseApp/**/*.db
+CourseApp/**/*.db-shm
+CourseApp/**/*.db-wal
+CourseApp/**/.vs/
+CourseApp/**/*.user
+CourseApp/**/.idea/
+CourseApp/**/.DS_Store
+CourseApp/**/*.http
