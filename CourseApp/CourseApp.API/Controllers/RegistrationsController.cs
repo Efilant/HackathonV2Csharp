@@ -29,6 +29,11 @@ public class RegistrationsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(string id)
     {
+        if (string.IsNullOrEmpty(id))
+        {
+            return BadRequest("Id is required");
+        }
+        
         var result = await _registrationService.GetByIdAsync(id);
         if (result.IsSuccess)
         {
@@ -51,6 +56,11 @@ public class RegistrationsController : ControllerBase
     [HttpGet("detail/{id}")]
     public async Task<IActionResult> GetByIdDetail(string id)
     {
+        if (string.IsNullOrEmpty(id))
+        {
+            return BadRequest("Id is required");
+        }
+        
         var result = await _registrationService.GetByIdRegistrationDetailAsync(id);
         if (result.IsSuccess)
         {
@@ -78,6 +88,11 @@ public class RegistrationsController : ControllerBase
     [HttpPut]
     public async Task<IActionResult> Update([FromBody] UpdatedRegistrationDto updatedRegistrationDto)
     {
+        if (updatedRegistrationDto == null)
+        {
+            return BadRequest("Request body cannot be null");
+        }
+        
         var result = await _registrationService.Update(updatedRegistrationDto);
         if (result.IsSuccess)
         {

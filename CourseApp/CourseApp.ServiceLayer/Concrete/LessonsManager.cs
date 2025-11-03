@@ -23,11 +23,10 @@ public class LessonsManager : ILessonService
     {
         var lessonList = await _unitOfWork.Lessons.GetAll(false).ToListAsync();
         var lessonListMapping = _mapper.Map<IEnumerable<GetAllLessonDto>>(lessonList);
-        if (!lessonList.Any())
-        {
-            return new ErrorDataResult<IEnumerable<GetAllLessonDto>>(null, ConstantsMessages.LessonListFailedMessage);
-        }
-        return new SuccessDataResult<IEnumerable<GetAllLessonDto>>(lessonListMapping, ConstantsMessages.LessonListSuccessMessage);
+        
+        // Boş liste normal bir durum, hata değil
+        return new SuccessDataResult<IEnumerable<GetAllLessonDto>>(lessonListMapping, 
+            lessonList.Any() ? ConstantsMessages.LessonListSuccessMessage : "Henüz ders bulunmamaktadır.");
     }
 
     public async Task<IDataResult<GetByIdLessonDto>> GetByIdAsync(string id, bool track = true)
@@ -108,13 +107,14 @@ public class LessonsManager : ILessonService
     {
         var lessonList = await _unitOfWork.Lessons.GetAllLessonDetails(false).ToListAsync();
         
+        // Boş liste normal bir durum, hata değil
         if (!lessonList.Any())
         {
-            return new ErrorDataResult<IEnumerable<GetAllLessonDetailDto>>(null, ConstantsMessages.LessonListFailedMessage);
+            return new SuccessDataResult<IEnumerable<GetAllLessonDetailDto>>(Enumerable.Empty<GetAllLessonDetailDto>(), "Henüz ders bulunmamaktadır.");
         }
         
         var lessonsListMapping = _mapper.Map<IEnumerable<GetAllLessonDetailDto>>(lessonList);
-        
+   
         return new SuccessDataResult<IEnumerable<GetAllLessonDetailDto>>(lessonsListMapping, ConstantsMessages.LessonListSuccessMessage);
     }
 

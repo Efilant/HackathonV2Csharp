@@ -26,7 +26,8 @@ public sealed class AppDbContext : DbContext
         
         modelBuilder.Entity<Course>()
             .HasOne(c => c.Instructor)
-            .WithMany()
-            .HasForeignKey(c => c.InstructorID);
+            .WithMany(i => i.Courses)
+            .HasForeignKey(c => c.InstructorID)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -121,9 +121,10 @@ public class ExamResultManager : IExamResultService
     {
         var examResultList = await _unitOfWork.ExamResults.GetAllExamResultDetail(false).ToListAsync();
         
+        // Boş liste normal bir durum, hata değil
         if (!examResultList.Any())
         {
-            return new ErrorDataResult<IEnumerable<GetAllExamResultDetailDto>>(null, ConstantsMessages.ExamResultListFailedMessage);
+            return new SuccessDataResult<IEnumerable<GetAllExamResultDetailDto>>(Enumerable.Empty<GetAllExamResultDetailDto>(), "Henüz sınav sonucu bulunmamaktadır.");
         }
 
         var examResultListMapping = _mapper.Map<IEnumerable<GetAllExamResultDetailDto>>(examResultList);
@@ -133,6 +134,18 @@ public class ExamResultManager : IExamResultService
 
     public async Task<IDataResult<GetByIdExamResultDetailDto>> GetByIdExamResultDetailAsync(string id, bool track = true)
     {
-        throw new NotImplementedException();
+        if (string.IsNullOrEmpty(id))
+        {
+            return new ErrorDataResult<GetByIdExamResultDetailDto>(null, "Id is required");
+        }
+        
+        var examResult = await _unitOfWork.ExamResults.GetByIdExamResultDetailAsync(id, track);
+        if (examResult == null)
+        {
+            return new ErrorDataResult<GetByIdExamResultDetailDto>(null, "Exam result not found");
+        }
+        
+        var examResultMapping = _mapper.Map<GetByIdExamResultDetailDto>(examResult);
+        return new SuccessDataResult<GetByIdExamResultDetailDto>(examResultMapping, ConstantsMessages.ExamResultGetByIdSuccessMessage);
     }
 }

@@ -2,7 +2,7 @@
 
 public class UpdatedRegistrationDto
 {
-    public string Id { get; set; }
+    public string Id { get; set; } = null!;
     public DateTime RegistrationDate { get; set; } = DateTime.Now;
     public decimal Price { get; set; }
     public string? StudentID { get; set; }

@@ -21,13 +21,19 @@ public class InstructorManager : IInstructorService
 
     public async Task<IDataResult<IEnumerable<GetAllInstructorDto>>> GetAllAsync(bool track = true)
     {
-        var instructorList = await _unitOfWork.Instructors.GetAll(false).ToListAsync();
-        var instructorListMapping = _mapper.Map<IEnumerable<GetAllInstructorDto>>(instructorList);
-        if (!instructorList.Any())
+        try
         {
-            return new ErrorDataResult<IEnumerable<GetAllInstructorDto>>(null, ConstantsMessages.InstructorListFailedMessage);
+            var instructorList = await _unitOfWork.Instructors.GetAll(false).ToListAsync();
+            var instructorListMapping = _mapper.Map<IEnumerable<GetAllInstructorDto>>(instructorList);
+            
+            // Boş liste normal bir durum, hata değil
+            return new SuccessDataResult<IEnumerable<GetAllInstructorDto>>(instructorListMapping, 
+                instructorList.Any() ? ConstantsMessages.InstructorListSuccessMessage : "Henüz eğitmen bulunmamaktadır.");
         }
-        return new SuccessDataResult<IEnumerable<GetAllInstructorDto>>(instructorListMapping, ConstantsMessages.InstructorListSuccessMessage);
+        catch (Exception ex)
+        {
+            return new ErrorDataResult<IEnumerable<GetAllInstructorDto>>(Enumerable.Empty<GetAllInstructorDto>(), $"Eğitmenler listelenirken bir hata oluştu: {ex.Message}");
+        }
     }
 
     public async Task<IDataResult<GetByIdInstructorDto>> GetByIdAsync(string id, bool track = true)

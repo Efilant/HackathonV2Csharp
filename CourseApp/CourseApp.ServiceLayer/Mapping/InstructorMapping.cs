@@ -11,5 +11,7 @@ public class InstructorMapping:Profile
         CreateMap<Instructor,GetAllInstructorDto>().ReverseMap();
         CreateMap<Instructor,GetByIdInstructorDto>().ReverseMap();
         CreateMap<Instructor,DeletedInstructorDto>().ReverseMap();
+        CreateMap<CreatedInstructorDto, Instructor>();
+        CreateMap<UpdatedInstructorDto, Instructor>();
     }
 }

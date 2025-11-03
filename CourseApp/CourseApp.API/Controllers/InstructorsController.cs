@@ -29,6 +29,11 @@ public class InstructorsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(string id)
     {
+        if (string.IsNullOrEmpty(id))
+        {
+            return BadRequest("Id is required");
+        }
+        
         var result = await _instructorService.GetByIdAsync(id);
         if (result.IsSuccess)
         {
@@ -56,6 +61,11 @@ public class InstructorsController : ControllerBase
     [HttpPut]
     public async Task<IActionResult> Update([FromBody] UpdatedInstructorDto updatedInstructorDto)
     {
+        if (updatedInstructorDto == null)
+        {
+            return BadRequest("Request body cannot be null");
+        }
+        
         var result = await _instructorService.Update(updatedInstructorDto);
         if (result.IsSuccess)
         {
@@ -64,10 +74,16 @@ public class InstructorsController : ControllerBase
         return BadRequest(result);
     }
 
-    [HttpDelete]
-    public async Task<IActionResult> Delete([FromBody] DeletedInstructorDto deletedInstructorDto)
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(string id)
     {
-        var result = await _instructorService.Remove(deletedInstructorDto);
+        if (string.IsNullOrEmpty(id))
+        {
+            return BadRequest("Id is required");
+        }
+        
+        var deleteDto = new DeletedInstructorDto { Id = id };
+        var result = await _instructorService.Remove(deleteDto);
         if (result.IsSuccess)
         {
             return Ok(result);

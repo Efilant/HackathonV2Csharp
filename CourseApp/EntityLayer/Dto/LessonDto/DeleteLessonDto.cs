@@ -2,7 +2,7 @@
 
 public class DeleteLessonDto
 {
-    public string Id { get; set; }
+    public string Id { get; set; } = null!;
     public string? Title { get; set; }
     public DateTime Date { get; set; }
     public byte Duration { get; set; }

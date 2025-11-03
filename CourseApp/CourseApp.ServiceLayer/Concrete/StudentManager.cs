@@ -24,11 +24,10 @@ public class StudentManager : IStudentService
     {
         var studentList = await _unitOfWork.Students.GetAll(track).ToListAsync();
         var studentListMapping = _mapper.Map<IEnumerable<GetAllStudentDto>>(studentList);
-        if (!studentList.Any())
-        {
-            return new ErrorDataResult<IEnumerable<GetAllStudentDto>>(null, ConstantsMessages.StudentListFailedMessage);
-        }
-        return new SuccessDataResult<IEnumerable<GetAllStudentDto>>(studentListMapping, ConstantsMessages.StudentListSuccessMessage);
+        
+        // Boş liste normal bir durum, hata değil
+        return new SuccessDataResult<IEnumerable<GetAllStudentDto>>(studentListMapping, 
+            studentList.Any() ? ConstantsMessages.StudentListSuccessMessage : "Henüz öğrenci bulunmamaktadır.");
     }
 
     public async Task<IDataResult<GetByIdStudentDto>> GetByIdAsync(string id, bool track = true)

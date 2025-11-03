@@ -23,16 +23,25 @@ public class RegistrationManager : IRegistrationService
     {
         var registrationList = await _unitOfWork.Registrations.GetAll(false).ToListAsync();
         var registrationListMapping = _mapper.Map<IEnumerable<GetAllRegistrationDto>>(registrationList);
-        if (!registrationList.Any())
-        {
-            return new ErrorDataResult<IEnumerable<GetAllRegistrationDto>>(null, ConstantsMessages.RegistrationListFailedMessage);
-        }
-        return new SuccessDataResult<IEnumerable<GetAllRegistrationDto>>(registrationListMapping, ConstantsMessages.RegistrationListSuccessMessage);
+        
+        // Boş liste normal bir durum, hata değil
+        return new SuccessDataResult<IEnumerable<GetAllRegistrationDto>>(registrationListMapping, 
+            registrationList.Any() ? ConstantsMessages.RegistrationListSuccessMessage : "Henüz kayıt bulunmamaktadır.");
     }
 
     public async Task<IDataResult<GetByIdRegistrationDto>> GetByIdAsync(string id, bool track = true)
     {
+        if (string.IsNullOrEmpty(id))
+        {
+            return new ErrorDataResult<GetByIdRegistrationDto>(null, "Id is required");
+        }
+        
         var hasRegistration = await _unitOfWork.Registrations.GetByIdAsync(id, false);
+        if (hasRegistration == null)
+        {
+            return new ErrorDataResult<GetByIdRegistrationDto>(null, "Registration not found");
+        }
+        
         var hasRegistrationMapping = _mapper.Map<GetByIdRegistrationDto>(hasRegistration);
         return new SuccessDataResult<GetByIdRegistrationDto>(hasRegistrationMapping, ConstantsMessages.RegistrationGetByIdSuccessMessage);
     }
@@ -108,9 +117,10 @@ public class RegistrationManager : IRegistrationService
     {
         var registrationData = await _unitOfWork.Registrations.GetAllRegistrationDetail(track).ToListAsync();
         
+        // Boş liste normal bir durum, hata değil
         if(!registrationData.Any())
         {
-            return new ErrorDataResult<IEnumerable<GetAllRegistrationDetailDto>>(null,ConstantsMessages.RegistrationListFailedMessage);
+            return new SuccessDataResult<IEnumerable<GetAllRegistrationDetailDto>>(Enumerable.Empty<GetAllRegistrationDetailDto>(), "Henüz kayıt bulunmamaktadır.");
         }
 
         var registrationDataMapping = _mapper.Map<IEnumerable<GetAllRegistrationDetailDto>>(registrationData);
@@ -120,6 +130,18 @@ public class RegistrationManager : IRegistrationService
 
     public async Task<IDataResult<GetByIdRegistrationDetailDto>> GetByIdRegistrationDetailAsync(string id, bool track = true)
     {
-        throw new NotImplementedException();
+        if (string.IsNullOrEmpty(id))
+        {
+            return new ErrorDataResult<GetByIdRegistrationDetailDto>(null, "Id is required");
+        }
+        
+        var registration = await _unitOfWork.Registrations.GetByIdRegistrationDetail(id, track);
+        if (registration == null)
+        {
+            return new ErrorDataResult<GetByIdRegistrationDetailDto>(null, "Registration not found");
+        }
+        
+        var registrationMapping = _mapper.Map<GetByIdRegistrationDetailDto>(registration);
+        return new SuccessDataResult<GetByIdRegistrationDetailDto>(registrationMapping, ConstantsMessages.RegistrationGetByIdSuccessMessage);
     }
 }

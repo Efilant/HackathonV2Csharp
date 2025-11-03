@@ -2,7 +2,7 @@
 
 public class GetAllStudentDto
 {
-    public string Id { get; set; }
+    public string Id { get; set; } = null!;
     public string? Name { get; set; }
     public string? Surname { get; set; }
     public string? Fullname => $"{Name} {Surname}";

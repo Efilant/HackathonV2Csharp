@@ -21,25 +21,29 @@ public class CourseManager : ICourseService
 
     public async Task<IDataResult<IEnumerable<GetAllCourseDto>>> GetAllAsync(bool track = true)
     {
-        var courseList = await _unitOfWork.Courses.GetAll(false).ToListAsync();
-        
-        var result = courseList.Select(course => new GetAllCourseDto
+        try
         {
-            CourseName = course.CourseName,
-            CreatedDate = course.CreatedDate,
-            EndDate = course.EndDate,
-            Id = course.ID,
-            InstructorID = course.InstructorID,
-            IsActive = course.IsActive,
-            StartDate = course.StartDate
-        }).ToList();
+            var courseList = await _unitOfWork.Courses.GetAll(false).ToListAsync();
+            
+            var result = courseList.Select(course => new GetAllCourseDto
+            {
+                CourseName = course.CourseName,
+                CreatedDate = course.CreatedDate,
+                EndDate = course.EndDate,
+                Id = course.ID,
+                InstructorID = course.InstructorID,
+                IsActive = course.IsActive,
+                StartDate = course.StartDate
+            }).ToList();
 
-        if (!result.Any())
-        {
-            return new ErrorDataResult<IEnumerable<GetAllCourseDto>>(null, ConstantsMessages.CourseListFailedMessage);
+            // Boş liste normal bir durum, hata değil
+            return new SuccessDataResult<IEnumerable<GetAllCourseDto>>(result, 
+                result.Any() ? ConstantsMessages.CourseListSuccessMessage : "Henüz kurs bulunmamaktadır.");
         }
-
-        return new SuccessDataResult<IEnumerable<GetAllCourseDto>>(result, ConstantsMessages.CourseListSuccessMessage);
+        catch (Exception ex)
+        {
+            return new ErrorDataResult<IEnumerable<GetAllCourseDto>>(Enumerable.Empty<GetAllCourseDto>(), $"Kurslar listelenirken bir hata oluştu: {ex.Message}");
+        }
     }
 
     public async Task<IDataResult<GetByIdCourseDto>> GetByIdAsync(string id, bool track = true)
@@ -156,14 +160,14 @@ public class CourseManager : ICourseService
             EndDate = x.EndDate,
             CreatedDate = x.CreatedDate,
             Id = x.ID,
-            InstructorID = x.InstructorID,
-            InstructorName = x.Instructor?.Name ?? "",
+            InstructorID = x.InstructorID ?? string.Empty,
+            InstructorName = x.Instructor?.Name ?? string.Empty,
             IsActive = x.IsActive,
         }).ToList();
 
         if (!courseDetailDtoList.Any())
         {
-            return new ErrorDataResult<IEnumerable<GetAllCourseDetailDto>>(null, ConstantsMessages.CourseDetailsFetchFailed);
+            return new ErrorDataResult<IEnumerable<GetAllCourseDetailDto>>(Enumerable.Empty<GetAllCourseDetailDto>(), ConstantsMessages.CourseDetailsFetchFailed);
         }
 
         return new SuccessDataResult<IEnumerable<GetAllCourseDetailDto>>(courseDetailDtoList, ConstantsMessages.CourseDetailsFetchedSuccessfully);

@@ -29,6 +29,11 @@ public class ExamsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(string id)
     {
+        if (string.IsNullOrEmpty(id))
+        {
+            return BadRequest("Id is required");
+        }
+        
         var result = await _examService.GetByIdAsync(id);
         if (result.IsSuccess)
         {
@@ -40,6 +45,11 @@ public class ExamsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateExamDto createExamDto)
     {
+        if (createExamDto == null)
+        {
+            return BadRequest("Request body cannot be null");
+        }
+        
         var result = await _examService.CreateAsync(createExamDto);
         if (result.IsSuccess)
         {
@@ -51,6 +61,11 @@ public class ExamsController : ControllerBase
     [HttpPut]
     public async Task<IActionResult> Update([FromBody] UpdateExamDto updateExamDto)
     {
+        if (updateExamDto == null)
+        {
+            return BadRequest("Request body cannot be null");
+        }
+        
         var result = await _examService.Update(updateExamDto);
         if (result.IsSuccess)
         {
